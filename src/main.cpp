@@ -42,20 +42,23 @@ void loop() {
   // Check if empty or failed reading
   if ( isnan(t) ) {
     Serial.println("Failed to read temperature!");
-  }
+  } 
+  // If not, print temperature
+  else { 
+    Serial.print("Temperature: ");
+    Serial.print(t);
+    Serial.println("°C");
+  };
+
+  // Check if empty or failed reading	
   if ( isnan(h) ) {
     Serial.println("Failed to read humidity!");
-  }
-
-  Serial.print("Temperature: ");
-  Serial.print(t);
-  Serial.println("°C");
-
-  Serial.print("Humidity: ");
-  Serial.print(h);
-  Serial.println("%");
-
-// Serial.print("Humidity: "); Serial.println(dht.readHumidity());
-// Serial.print("Temperature: "); Serial.println(dht.readTemperature());
+  } 
+  // If not, print humidity
+  else {
+    Serial.print("Humidity: ");
+    Serial.print(h);
+    Serial.println("%");
+  };
 
 }
