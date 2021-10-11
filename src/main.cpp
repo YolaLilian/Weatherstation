@@ -9,6 +9,9 @@
 // VEML6075
 #include "Adafruit_VEML6075.h"
 
+// LiquidCrystal display
+#include <LiquidCrystal_I2C.h>
+
 // Defines
 
 // DHT
@@ -22,6 +25,9 @@ DHT dht(DHTPIN, DHTTYPE);
 
 // VEML6075
 Adafruit_VEML6075 uv = Adafruit_VEML6075();
+
+// LiquidCrystal Display
+LiquidCrystal_I2C lcd(0x27, 20, 4);
 
 // Variables
 
@@ -51,10 +57,26 @@ void setup() {
   dht.begin();
   uv.begin();
 
-  // Determine Pinmode
-
-  // Hall sensor
+  // Determine Hal Pinmode
   pinMode(hallPin, INPUT); 
+
+  // Initialize LCD
+  lcd.init();
+  lcd.backlight();
+
+  // Write on lcd on startup
+  lcd.setCursor(0,0);
+  lcd.print("Humidity: ");
+  lcd.print(h);
+  lcd.setCursor(0,1);
+  lcd.print("Temperature: ");
+  lcd.print(t);
+  lcd.setCursor(0,2);
+  lcd.print("UV Index: "); 
+  lcd.print(uvI);
+  lcd.setCursor(0,3);
+  lcd.print("Wind speed: ");
+  lcd.print("nan"); // Replace with wind speed variable!!!
 
 }
 
@@ -133,5 +155,22 @@ void loop() {
     Serial.print("Hall sensor data: ");
     Serial.println(hall);
   }
+
+  // Clear LCD
+  lcd.clear();
+
+  // Rewrite on LCD
+  lcd.setCursor(0,0);
+  lcd.print("Humidity: ");
+  lcd.print(h);
+  lcd.setCursor(0,1);
+  lcd.print("Temperature: ");
+  lcd.print(t);
+  lcd.setCursor(0,2);
+  lcd.print("UV Index: "); 
+  lcd.print(uvI);
+  lcd.setCursor(0,3);
+  lcd.print("Wind speed: ");
+  lcd.print("nan"); // Replace with wind speed variable!!!
 
 }
