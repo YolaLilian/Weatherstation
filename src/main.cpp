@@ -34,6 +34,10 @@ float uvA = 0.0;  // UVA
 float uvB = 0.0;  // UVB
 float uvI = 0.0;  // UV Index
 
+// Hall variables
+int hallPin = 13;
+bool hall = 0;
+
 void setup() {
 
   // Start Serial (for debugging purpose)
@@ -46,6 +50,11 @@ void setup() {
   // Starting sensors
   dht.begin();
   uv.begin();
+
+  // Determine Pinmode
+
+  // Hall sensor
+  pinMode(hallPin, INPUT); 
 
 }
 
@@ -60,6 +69,8 @@ void loop() {
   uvA = uv.readUVA();
   uvB = uv.readUVB();
   uvI = uv.readUVI();
+
+  hall = digitalRead(hallPin);
 
   // Check if empty or failed reading
   if ( isnan(t) ) {
@@ -83,6 +94,7 @@ void loop() {
     Serial.println("%");
   };
 
+  // Check if empty or failed reading	
   if ( isnan(uvA ) ) {
     Serial.println("Failed to read UVA!");
   } 
@@ -92,6 +104,7 @@ void loop() {
     Serial.println(uvA);
   };
 
+  // Check if empty or failed reading	
   if ( isnan(uvB) ) {
     Serial.println("Failed to read UVB!");
   } 
@@ -101,6 +114,7 @@ void loop() {
     Serial.println(uvB);
   };
 
+  // Check if empty or failed reading	
   if ( isnan(uvI) ) {
     Serial.println("Failed to read UV Index!");
   } 
@@ -109,5 +123,15 @@ void loop() {
     Serial.print("UV Index: ");
     Serial.println(uvI);
   };
+
+  // Check if empty or failed reading	
+  if ( isnan(hall) ) {
+    Serial.println("Failed to read Hall sensor!");
+  }
+  // If not, print Hall data
+  else { 
+    Serial.print("Hall sensor data: ");
+    Serial.println(hall);
+  }
 
 }
