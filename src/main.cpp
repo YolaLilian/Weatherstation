@@ -15,7 +15,7 @@
 // Defines
 
 // DHT
-#define DHTPIN 2
+#define DHTPIN 13
 #define DHTTYPE DHT22
 
 // Initialize
@@ -41,7 +41,7 @@ float uvB = 0.0;  // UVB
 float uvI = 0.0;  // UV Index
 
 // Hall variables
-int hallPin = 13;
+int hallPin = 12;
 bool hall = 0;
 
 void setup() {
@@ -76,7 +76,7 @@ void setup() {
   lcd.print(uvI);
   lcd.setCursor(0,3);
   lcd.print("Wind speed: ");
-  lcd.print("nan"); // Replace with wind speed variable!!!
+  lcd.print(hall); // Replace with wind speed variable!!!
 
 }
 
@@ -84,7 +84,7 @@ void loop() {
   // Pause between measurements
   delay(5000);
 
-  // Take readings from sensor
+  // Take readings from sensors
   t = dht.readTemperature();
   h = dht.readHumidity();
 
@@ -95,63 +95,57 @@ void loop() {
   hall = digitalRead(hallPin);
 
   // Check if empty or failed reading
+  // If not, print temperature
   if ( isnan(t) ) {
     Serial.println("Failed to read temperature!");
-  } 
-  // If not, print temperature
-  else { 
+  } else { 
     Serial.print("Temperature: ");
     Serial.print(t);
     Serial.println("°C");
   };
 
   // Check if empty or failed reading	
+  // If not, print humidity
   if ( isnan(h) ) {
     Serial.println("Failed to read humidity!");
-  } 
-  // If not, print humidity
-  else {
+  } else {
     Serial.print("Humidity: ");
     Serial.print(h);
     Serial.println("%");
   };
 
-  // Check if empty or failed reading	
+  // Check if empty or failed reading
+  // If not, print UV A
   if ( isnan(uvA ) ) {
     Serial.println("Failed to read UVA!");
-  } 
-  // If not, print UV A
-  else { 
+  } else { 
     Serial.print("UV A: ");
     Serial.println(uvA);
   };
 
-  // Check if empty or failed reading	
+  // Check if empty or failed reading
+  // If not, print UV B
   if ( isnan(uvB) ) {
     Serial.println("Failed to read UVB!");
-  } 
-  // If not, print UV B
-  else { 
+  } else { 
     Serial.print("UV B: ");
     Serial.println(uvB);
   };
 
-  // Check if empty or failed reading	
+  // Check if empty or failed reading
+  // If not, print UV Index
   if ( isnan(uvI) ) {
     Serial.println("Failed to read UV Index!");
-  } 
-  // If not, print UV Index
-  else { 
+  } else { 
     Serial.print("UV Index: ");
     Serial.println(uvI);
   };
 
-  // Check if empty or failed reading	
+  // Check if empty or failed reading
+  // If not, print Hall data
   if ( isnan(hall) ) {
     Serial.println("Failed to read Hall sensor!");
-  }
-  // If not, print Hall data
-  else { 
+  } else { 
     Serial.print("Hall sensor data: ");
     Serial.println(hall);
   }
@@ -171,6 +165,6 @@ void loop() {
   lcd.print(uvI);
   lcd.setCursor(0,3);
   lcd.print("Wind speed: ");
-  lcd.print("nan"); // Replace with wind speed variable!!!
+  lcd.print(hall); // Replace with wind speed variable!!!
 
 }
