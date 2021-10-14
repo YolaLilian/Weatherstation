@@ -1,5 +1,4 @@
 // Includes
-
 // I2C
 #include <Wire.h>
 
@@ -12,14 +11,31 @@
 // LiquidCrystal display
 #include <LiquidCrystal_I2C.h>
 
-// Defines
+// MQTT Setup
+#include "Secret.h"
+#include <ESP8266WiFi.h>
+#include <ArduinoHA.h>
 
+// Initialize
+// Initialize WiFi
+WiFiClient client;
+HADevice device;
+HAMqtt mqtt(client, device);
+
+// Defines
 // DHT
 #define DHTPIN 13
 #define DHTTYPE DHT22
 
-// Initialize
+// HA sensors and/or devices
+HASensor sensorOwner("Owner");
+HASensor sensorLong("Long");
+HASensor sensorLat("Lat");
+HASensor sensorTemperature("Temperature");
+HASensor sensorHumidity("Humidity");
+HASensor sensorSignalstrength("Signal_strength");
 
+// Initialize
 // DHT
 DHT dht(DHTPIN, DHTTYPE);
 
@@ -30,19 +46,26 @@ Adafruit_VEML6075 uv = Adafruit_VEML6075();
 LiquidCrystal_I2C lcd(0x27, 20, 4);
 
 // Variables
-
 // DHT variables
-float t = 0.0;    // Temperature
-float h = 0.0;    // Humidity
+float temperatureValue = 0.0;    // Temperature
+float humidityValue = 0.0;    // Humidity
 
 // VEML6075 variables
-float uvA = 0.0;  // UVA
-float uvB = 0.0;  // UVB
-float uvI = 0.0;  // UV Index
+float uvAValue = 0.0;  // UVA
+float uvBValue = 0.0;  // UVB
+float uvIValue = 0.0;  // UV Index
 
 // Hall variables
 int hallPin = 12;
-bool hall = 0;
+bool hallValue = 0;
+
+// Signal Strength variable
+float signalstrengthValue;
+
+// // Frequency variables
+// unsigned long lastReadAt = millis();
+// unsigned long lastTemperatureSend = millis();
+// bool lastInputState = false;
 
 void setup() {
 
@@ -67,87 +90,180 @@ void setup() {
   // Write on lcd on startup
   lcd.setCursor(0,0);
   lcd.print("Humidity: ");
-  lcd.print(h);
+  lcd.print(humidityValue);
   lcd.setCursor(0,1);
   lcd.print("Temperature: ");
-  lcd.print(t);
+  lcd.print(temperatureValue);
   lcd.setCursor(0,2);
   lcd.print("UV Index: "); 
-  lcd.print(uvI);
+  lcd.print(uvIValue);
   lcd.setCursor(0,3);
   lcd.print("Wind speed: ");
-  lcd.print(hall); // Replace with wind speed variable!!!
+  lcd.print(hallValue); // Replace with wind speed variable!!!
+
+  // MAC address
+  byte mac[WL_MAC_ADDR_LENGTH];
+  WiFi.macAddress(mac);
+  device.setUniqueId(mac, sizeof(mac));
+
+  // Connect to WiFi
+  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+  while (WiFi.status() != WL_CONNECTED) {
+      Serial.print(".");
+      delay(500); // waiting for the connection
+  }
+  Serial.println();
+  Serial.println("Connected to the network");
+
+  // HA String conversion from Secret.h
+  String student_id = STUDENT_ID;
+  String student_name = STUDENT_NAME;
+
+  // Add student ID number with sensor name
+  String stationNameStr = student_name + "'s Home Station";
+  String ownerNameStr = student_id + " Station owner";
+  String longNameStr = student_id + " Long";
+  String latNameStr = student_id + " Lat";
+  String temperatureNameStr = student_id + " Temperature";
+  String humidityNameStr = student_id + " Humidity";
+  String signalstrengthNameStr = student_id + " Signal Strength";
+  
+  // Convert the strings to const char*
+  const char* stationName = stationNameStr.c_str();
+  const char* ownerName = ownerNameStr.c_str();
+  const char* longName = longNameStr.c_str();
+  const char* latName = latNameStr.c_str();
+  const char* temperatureName = temperatureNameStr.c_str();
+  const char* humidityName = humidityNameStr.c_str();
+  const char* signalstrengthName = signalstrengthNameStr.c_str();
+
+  // Setup main device
+  device.setName(stationName);
+  device.setSoftwareVersion(SOFTWARE_VERSION);
+  device.setManufacturer(STUDENT_NAME);
+  device.setModel(MODEL_TYPE);
+
+  // Setup owner
+  sensorOwner.setName(ownerName);
+  sensorOwner.setIcon("mdi:account");
+
+  // Setup longitude and latitude
+  sensorLong.setName(longName);
+  sensorLong.setIcon("mdi:crosshairs-gps");
+  sensorLat.setName(latName);
+  sensorLat.setIcon("mdi:crosshairs-gps");
+
+  // Setup signal strength
+  sensorSignalstrength.setName(signalstrengthName);
+  sensorSignalstrength.setDeviceClass("signal_strength");
+  sensorSignalstrength.setUnitOfMeasurement("dBm");
+
+  // Setup temperature
+  sensorTemperature.setName(temperatureName);
+  sensorTemperature.setDeviceClass("temperature");
+  sensorTemperature.setUnitOfMeasurement("°C");
+
+  // Setup humidity
+  sensorHumidity.setName(humidityName);
+  sensorHumidity.setDeviceClass("humidity");
+  sensorHumidity.setUnitOfMeasurement("%");
+
+  // Start MQTT
+  mqtt.begin(BROKER_ADDR, BROKER_USERNAME, BROKER_PASSWORD);
+
+  while (!mqtt.isConnected()) {
+      mqtt.loop();
+      Serial.print(".");
+      delay(500); // waiting for the connection
+  }
+  
+  Serial.println("Connected to MQTT broker");
+
+  // Set values
+  sensorOwner.setValue(STUDENT_NAME);
+  sensorLat.setValue(LAT, (uint8_t)15U);
+  sensorLong.setValue(LONG, (uint8_t)15U);
 
 }
 
 void loop() {
   // Pause between measurements
-  delay(5000);
+  delay(3000);
+
+  // MQTT
+  mqtt.loop();
 
   // Take readings from sensors
-  t = dht.readTemperature();
-  h = dht.readHumidity();
+  temperatureValue = dht.readTemperature();
+  humidityValue = dht.readHumidity();
 
-  uvA = uv.readUVA();
-  uvB = uv.readUVB();
-  uvI = uv.readUVI();
+  uvAValue = uv.readUVA();
+  uvBValue = uv.readUVB();
+  uvIValue = uv.readUVI();
 
-  hall = digitalRead(hallPin);
+  hallValue = digitalRead(hallPin);
+
+  // Signal strength check
+  signalstrengthValue = WiFi.RSSI();
+  Serial.println(signalstrengthValue);
+  sensorSignalstrength.setValue(signalstrengthValue);
 
   // Check if empty or failed reading
   // If not, print temperature
-  if ( isnan(t) ) {
+  if ( isnan(temperatureValue) ) {
     Serial.println("Failed to read temperature!");
   } else { 
     Serial.print("Temperature: ");
-    Serial.print(t);
+    Serial.print(temperatureValue);
     Serial.println("°C");
+    sensorTemperature.setValue(temperatureValue);
   };
 
   // Check if empty or failed reading	
   // If not, print humidity
-  if ( isnan(h) ) {
+  if ( isnan(humidityValue) ) {
     Serial.println("Failed to read humidity!");
   } else {
     Serial.print("Humidity: ");
-    Serial.print(h);
+    Serial.print(humidityValue);
     Serial.println("%");
+    sensorHumidity.setValue(humidityValue);
   };
 
   // Check if empty or failed reading
   // If not, print UV A
-  if ( isnan(uvA ) ) {
+  if ( isnan(uvAValue) ) {
     Serial.println("Failed to read UVA!");
   } else { 
     Serial.print("UV A: ");
-    Serial.println(uvA);
+    Serial.println(uvAValue);
   };
 
   // Check if empty or failed reading
   // If not, print UV B
-  if ( isnan(uvB) ) {
+  if ( isnan(uvBValue) ) {
     Serial.println("Failed to read UVB!");
   } else { 
     Serial.print("UV B: ");
-    Serial.println(uvB);
+    Serial.println(uvBValue);
   };
 
   // Check if empty or failed reading
   // If not, print UV Index
-  if ( isnan(uvI) ) {
+  if ( isnan(uvIValue) ) {
     Serial.println("Failed to read UV Index!");
   } else { 
     Serial.print("UV Index: ");
-    Serial.println(uvI);
+    Serial.println(uvIValue);
   };
 
   // Check if empty or failed reading
   // If not, print Hall data
-  if ( isnan(hall) ) {
+  if ( isnan(hallValue) ) {
     Serial.println("Failed to read Hall sensor!");
   } else { 
     Serial.print("Hall sensor data: ");
-    Serial.println(hall);
+    Serial.println(hallValue);
   }
 
   // Clear LCD
@@ -156,15 +272,15 @@ void loop() {
   // Rewrite on LCD
   lcd.setCursor(0,0);
   lcd.print("Humidity: ");
-  lcd.print(h);
+  lcd.print(humidityValue);
   lcd.setCursor(0,1);
   lcd.print("Temperature: ");
-  lcd.print(t);
+  lcd.print(temperatureValue);
   lcd.setCursor(0,2);
   lcd.print("UV Index: "); 
-  lcd.print(uvI);
+  lcd.print(uvIValue);
   lcd.setCursor(0,3);
   lcd.print("Wind speed: ");
-  lcd.print(hall); // Replace with wind speed variable!!!
+  lcd.print(hallValue); // Replace with wind speed variable!!!
 
 }
