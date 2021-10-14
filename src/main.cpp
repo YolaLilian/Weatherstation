@@ -16,6 +16,9 @@
 #include <ESP8266WiFi.h>
 #include <ArduinoHA.h>
 
+// LEDs
+#include <FastLED.h>
+
 // Initialize
 // Initialize WiFi
 WiFiClient client;
@@ -34,6 +37,13 @@ HASensor sensorLat("Lat");
 HASensor sensorTemperature("Temperature");
 HASensor sensorHumidity("Humidity");
 HASensor sensorSignalstrength("Signal_strength");
+
+// LEDs
+#define NUM_LEDS 6
+#define DATA_PIN 14
+#define LED_TYPE WS2812B
+#define COLOR_ORDER GRB
+CRGB leds[NUM_LEDS];
 
 // Initialize
 // DHT
@@ -80,8 +90,11 @@ void setup() {
   dht.begin();
   uv.begin();
 
-  // Determine Hal Pinmode
+  // Determine Hall Pinmode
   pinMode(hallPin, INPUT); 
+
+  // Set up LEDs
+  FastLED.addLeds<LED_TYPE, DATA_PIN, COLOR_ORDER>(leds, NUM_LEDS);  // GRB ordering is typical
 
   // Initialize LCD
   lcd.init();
@@ -265,6 +278,19 @@ void loop() {
     Serial.print("Hall sensor data: ");
     Serial.println(hallValue);
   }
+
+  // Loop LEDs
+  for (int i = 0; i < 5; i++) {
+    leds[i] = CRGB( 36, 229, 250);
+    FastLED.show();
+  }
+  delay(3000);
+  for (int i = 0; i < 5; i++) {
+  // Now turn the LED off, then pause
+    leds[i] = CRGB::Black;
+    FastLED.show();
+  }
+  delay(3000);
 
   // Clear LCD
   lcd.clear();
