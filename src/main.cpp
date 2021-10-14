@@ -36,6 +36,8 @@ HASensor sensorLong("Long");
 HASensor sensorLat("Lat");
 HASensor sensorTemperature("Temperature");
 HASensor sensorHumidity("Humidity");
+HASensor sensorUV("UV");
+HASensor sensorWindspeed("Wind_speed");
 HASensor sensorSignalstrength("Signal_strength");
 
 // LEDs
@@ -61,21 +63,18 @@ float temperatureValue = 0.0;    // Temperature
 float humidityValue = 0.0;    // Humidity
 
 // VEML6075 variables
-float uvAValue = 0.0;  // UVA
-float uvBValue = 0.0;  // UVB
 float uvIValue = 0.0;  // UV Index
 
 // Hall variables
 int hallPin = 12;
-bool hallValue = 0;
+bool hallValue = 0; // Hall sensor true or false
+
+// Wind speed variable
+float windspeedValue = 0.0; // Wind speed
 
 // Signal Strength variable
-float signalstrengthValue;
+float signalstrengthValue; // Signal strength
 
-// // Frequency variables
-// unsigned long lastReadAt = millis();
-// unsigned long lastTemperatureSend = millis();
-// bool lastInputState = false;
 
 void setup() {
 
@@ -139,6 +138,8 @@ void setup() {
   String latNameStr = student_id + " Lat";
   String temperatureNameStr = student_id + " Temperature";
   String humidityNameStr = student_id + " Humidity";
+  String uvNameStr = student_id + " UV Index";
+  String windspeedNameStr = student_id + " Wind Speed";
   String signalstrengthNameStr = student_id + " Signal Strength";
   
   // Convert the strings to const char*
@@ -148,6 +149,8 @@ void setup() {
   const char* latName = latNameStr.c_str();
   const char* temperatureName = temperatureNameStr.c_str();
   const char* humidityName = humidityNameStr.c_str();
+  const char* uvName = uvNameStr.c_str();
+  const char* windspeedName = windspeedNameStr.c_str();
   const char* signalstrengthName = signalstrengthNameStr.c_str();
 
   // Setup main device
@@ -166,11 +169,6 @@ void setup() {
   sensorLat.setName(latName);
   sensorLat.setIcon("mdi:crosshairs-gps");
 
-  // Setup signal strength
-  sensorSignalstrength.setName(signalstrengthName);
-  sensorSignalstrength.setDeviceClass("signal_strength");
-  sensorSignalstrength.setUnitOfMeasurement("dBm");
-
   // Setup temperature
   sensorTemperature.setName(temperatureName);
   sensorTemperature.setDeviceClass("temperature");
@@ -180,6 +178,18 @@ void setup() {
   sensorHumidity.setName(humidityName);
   sensorHumidity.setDeviceClass("humidity");
   sensorHumidity.setUnitOfMeasurement("%");
+
+  // Setup UV sensor
+  sensorUV.setName(uvName);
+
+  // Setup wind speed
+  sensorWindspeed.setName(windspeedName);
+  sensorWindspeed.setUnitOfMeasurement("km/u");
+
+  // Setup signal strength
+  sensorSignalstrength.setName(signalstrengthName);
+  sensorSignalstrength.setDeviceClass("signal_strength");
+  sensorSignalstrength.setUnitOfMeasurement("dBm");
 
   // Start MQTT
   mqtt.begin(BROKER_ADDR, BROKER_USERNAME, BROKER_PASSWORD);
@@ -210,8 +220,6 @@ void loop() {
   temperatureValue = dht.readTemperature();
   humidityValue = dht.readHumidity();
 
-  uvAValue = uv.readUVA();
-  uvBValue = uv.readUVB();
   uvIValue = uv.readUVI();
 
   hallValue = digitalRead(hallPin);
@@ -244,30 +252,13 @@ void loop() {
   };
 
   // Check if empty or failed reading
-  // If not, print UV A
-  if ( isnan(uvAValue) ) {
-    Serial.println("Failed to read UVA!");
-  } else { 
-    Serial.print("UV A: ");
-    Serial.println(uvAValue);
-  };
-
-  // Check if empty or failed reading
-  // If not, print UV B
-  if ( isnan(uvBValue) ) {
-    Serial.println("Failed to read UVB!");
-  } else { 
-    Serial.print("UV B: ");
-    Serial.println(uvBValue);
-  };
-
-  // Check if empty or failed reading
   // If not, print UV Index
   if ( isnan(uvIValue) ) {
     Serial.println("Failed to read UV Index!");
   } else { 
     Serial.print("UV Index: ");
     Serial.println(uvIValue);
+    sensorUV.setValue(uvIValue);
   };
 
   // Check if empty or failed reading
@@ -277,7 +268,9 @@ void loop() {
   } else { 
     Serial.print("Hall sensor data: ");
     Serial.println(hallValue);
+    sensorWindspeed.setValue(hallValue); 
   }
+
 
   // Loop LEDs
   for (int i = 0; i < 5; i++) {
