@@ -273,12 +273,12 @@ void loop() {
 
 
   // Loop LEDs
-  for (int i = 0; i < 5; i++) {
+  for (int i = 0; i < NUM_LEDS; i++) {
     leds[i] = CRGB( 36, 229, 250);
     FastLED.show();
   }
   delay(3000);
-  for (int i = 0; i < 5; i++) {
+  for (int i = 0; i < NUM_LEDS; i++) {
   // Now turn the LED off, then pause
     leds[i] = CRGB::Black;
     FastLED.show();
