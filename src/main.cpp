@@ -1,36 +1,57 @@
-// Includes
-// I2C
-#include <Wire.h>
-
 // DHT
 #include <DHT.h>
+
+#define DHTPIN 13
+#define DHTTYPE DHT22
+
+DHT dht(DHTPIN, DHTTYPE);
+
+float temperatureValue = 0.0;     // Temperature
+float humidityValue = 0.0;        // Humidity
+
+// I2C
+#include <Wire.h>
 
 // VEML6075
 #include "Adafruit_VEML6075.h"
 
-// LiquidCrystal display
+Adafruit_VEML6075 uv = Adafruit_VEML6075();
+
+float uvIValue = 0.0;             // UV Index
+
+// Hall
+int hallPin = 12;
+bool hallValue = 0;             // Hall sensor true or false
+
+float windspeedValue = 0.0;     // Wind speed
+
+// LEDs
+#include <FastLED.h>
+
+#define NUM_LEDS 6                // Number of leds
+#define DATA_PIN 14               // Data pin
+#define LED_TYPE WS2812B
+#define COLOR_ORDER GRB
+
+CRGB leds[NUM_LEDS];
+
+// LCD
 #include <LiquidCrystal_I2C.h>
+
+LiquidCrystal_I2C lcd(0x27, 20, 4);
+
+// Signal Strength
+float signalstrengthValue;        // Signal strength
 
 // MQTT Setup
 #include "Secret.h"
 #include <ESP8266WiFi.h>
 #include <ArduinoHA.h>
 
-// LEDs
-#include <FastLED.h>
-
-// Initialize
-// Initialize WiFi
 WiFiClient client;
 HADevice device;
 HAMqtt mqtt(client, device);
 
-// Defines
-// DHT
-#define DHTPIN 13
-#define DHTTYPE DHT22
-
-// HA sensors and/or devices
 HASensor sensorOwner("Owner");
 HASensor sensorLong("Long");
 HASensor sensorLat("Lat");
@@ -40,66 +61,34 @@ HASensor sensorUV("UV");
 HASensor sensorWindspeed("Wind_speed");
 HASensor sensorSignalstrength("Signal_strength");
 
-// LEDs
-#define NUM_LEDS 6
-#define DATA_PIN 14
-#define LED_TYPE WS2812B
-#define COLOR_ORDER GRB
-CRGB leds[NUM_LEDS];
-
-// Initialize
-// DHT
-DHT dht(DHTPIN, DHTTYPE);
-
-// VEML6075
-Adafruit_VEML6075 uv = Adafruit_VEML6075();
-
-// LiquidCrystal Display
-LiquidCrystal_I2C lcd(0x27, 20, 4);
-
-// Variables
-// DHT variables
-float temperatureValue = 0.0;    // Temperature
-float humidityValue = 0.0;    // Humidity
-
-// VEML6075 variables
-float uvIValue = 0.0;  // UV Index
-
-// Hall variables
-int hallPin = 12;
-bool hallValue = 0; // Hall sensor true or false
-
-// Wind speed variable
-float windspeedValue = 0.0; // Wind speed
-
-// Signal Strength variable
-float signalstrengthValue; // Signal strength
-
-
 void setup() {
 
-  // Start Serial (for debugging purpose)
   Serial.begin(9600);
   Serial.println("Starting setup!");
 
-  // Start I2C readings
+  // DHT
+  dht.begin();
+
+  // I2C
   Wire.begin();
 
-  // Starting sensors
-  dht.begin();
+  // VEML6075
   uv.begin();
 
-  // Determine Hall Pinmode
+  // Hall
   pinMode(hallPin, INPUT); 
 
-  // Set up LEDs
+  // LEDs
   FastLED.addLeds<LED_TYPE, DATA_PIN, COLOR_ORDER>(leds, NUM_LEDS);  // GRB ordering is typical
 
-  // Initialize LCD
+  for (int i = 0; i < NUM_LEDS; i++) {
+    leds[i] = CRGB( 36, 229, 250);
+    FastLED.show();
+  }
+
+  // LCD
   lcd.init();
   lcd.backlight();
-
-  // Write on lcd on startup
   lcd.setCursor(0,0);
   lcd.print("Humidity: ");
   lcd.print(humidityValue);
@@ -210,24 +199,13 @@ void setup() {
 }
 
 void loop() {
-  // Pause between measurements
+
   delay(3000);
 
-  // MQTT
-  mqtt.loop();
-
-  // Take readings from sensors
   temperatureValue = dht.readTemperature();
   humidityValue = dht.readHumidity();
-
   uvIValue = uv.readUVI();
-
   hallValue = digitalRead(hallPin);
-
-  // Signal strength check
-  signalstrengthValue = WiFi.RSSI();
-  Serial.println(signalstrengthValue);
-  sensorSignalstrength.setValue(signalstrengthValue);
 
   // Check if empty or failed reading
   // If not, print temperature
@@ -271,21 +249,20 @@ void loop() {
     sensorWindspeed.setValue(hallValue); 
   }
 
-
   // Loop LEDs
-  for (int i = 0; i < NUM_LEDS; i++) {
-    leds[i] = CRGB( 36, 229, 250);
-    FastLED.show();
-  }
-  delay(3000);
   for (int i = 0; i < NUM_LEDS; i++) {
   // Now turn the LED off, then pause
     leds[i] = CRGB::Black;
     FastLED.show();
   }
   delay(3000);
+  for (int i = 0; i < NUM_LEDS; i++) {
+    leds[i] = CRGB( 36, 229, 250);
+    FastLED.show();
+  }
+  delay(3000);
 
-  // Clear LCD
+   // Clear LCD
   lcd.clear();
 
   // Rewrite on LCD
@@ -301,5 +278,10 @@ void loop() {
   lcd.setCursor(0,3);
   lcd.print("Wind speed: ");
   lcd.print(hallValue); // Replace with wind speed variable!!!
+
+  // Signal strength check
+  signalstrengthValue = WiFi.RSSI();
+  Serial.println(signalstrengthValue);
+  sensorSignalstrength.setValue(signalstrengthValue);
 
 }
