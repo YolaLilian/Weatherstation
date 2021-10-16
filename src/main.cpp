@@ -170,10 +170,12 @@ void setup() {
 
   // Setup UV sensor
   sensorUV.setName(uvName);
+  sensorUV.setIcon("mdi:sun-wireless");
 
   // Setup wind speed
   sensorWindspeed.setName(windspeedName);
   sensorWindspeed.setUnitOfMeasurement("km/u");
+  sensorWindspeed.setIcon("mdi:weather-windy");
 
   // Setup signal strength
   sensorSignalstrength.setName(signalstrengthName);
