@@ -63,13 +63,12 @@ HASensor sensorSignalstrength("Signal_strength");
 
 // Weather data API
 #include <ESP8266HTTPClient.h>
-// #include <ArduinoJson.h>
 #include <Arduino_JSON.h>
 
-const char* serverName = "http://api.weatherapi.com/v1/current.json?key=456a528ddbf846b5bcb124644211510&q=51.94362193018906,4.37045934809847";
+const char* serverName = "http://api.weatherapi.com/v1/current.json?key=456a528ddbf846b5bcb124644211510&q=51.94362193018906,4.37045934809847";                  // API address
 HTTPClient http;
-String sensorReadings;
 String payload;
+String sensorReadings;
 
 void setup() {
 
@@ -210,20 +209,20 @@ void setup() {
 
 }
 
-String httpGETRequest( const char* serverName) {
+String httpGETRequest(const char* serverName) {
 
   http.begin(client, serverName);
   int httpResponseCode = http.GET();
 
   if (httpResponseCode == 200) {
  
-    String payload = http.getString();   // Get the request response payload
-    Serial.println(payload);
+    payload = http.getString();   // Get the request response payload
 
   } else {
     
     Serial.print("Error code: ");
     Serial.println(httpResponseCode);
+
   }
 
   http.end();
@@ -318,6 +317,15 @@ void loop() {
   }
   delay(3000);
 
-  sensorReadings = httpGETRequest(serverName);
+  String sensorReadings = httpGETRequest(serverName);
+  JSONVar myWeather = JSON.parse(sensorReadings);
+
+  if (JSON.typeof(myWeather) == "undefined") {
+    Serial.println("Parsing input failed!");
+    return;
+  }
+
+  JSONVar currentWeather = myWeather["current"]["condition"]["code"];
+  Serial.println(currentWeather);
 
 }
