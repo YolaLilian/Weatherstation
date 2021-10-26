@@ -215,18 +215,13 @@ String httpGETRequest(const char* serverName) {
   int httpResponseCode = http.GET();
 
   if (httpResponseCode == 200) {
- 
     payload = http.getString();   // Get the request response payload
-
   } else {
-    
     Serial.print("Error code: ");
     Serial.println(httpResponseCode);
-
   }
 
   http.end();
-
   return payload;
 
 }
@@ -245,9 +240,6 @@ void loop() {
   if ( isnan(temperatureValue) ) {
     Serial.println("Failed to read temperature!");
   } else { 
-    // Serial.print("Temperature: ");
-    // Serial.print(temperatureValue);
-    // Serial.println("°C");
     sensorTemperature.setValue(temperatureValue);
   };
 
@@ -256,9 +248,6 @@ void loop() {
   if ( isnan(humidityValue) ) {
     Serial.println("Failed to read humidity!");
   } else {
-    // Serial.print("Humidity: ");
-    // Serial.print(humidityValue);
-    // Serial.println("%");
     sensorHumidity.setValue(humidityValue);
   };
 
@@ -267,8 +256,6 @@ void loop() {
   if ( isnan(uvIValue) ) {
     Serial.println("Failed to read UV Index!");
   } else { 
-    // Serial.print("UV Index: ");
-    // Serial.println(uvIValue);
     sensorUV.setValue(uvIValue);
   };
 
@@ -277,8 +264,6 @@ void loop() {
   if ( isnan(hallValue) ) {
     Serial.println("Failed to read Hall sensor!");
   } else { 
-    // Serial.print("Hall sensor data: ");
-    // Serial.println(hallValue);
     sensorWindspeed.setValue(hallValue); 
   }
 
