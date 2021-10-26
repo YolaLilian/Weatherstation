@@ -21,9 +21,9 @@ float uvIValue = 0.0;             // UV Index
 
 // Hall
 int hallPin = 12;
-bool hallValue = 0;             // Hall sensor true or false
+bool hallValue = 0;               // Hall sensor true or false
 
-float windspeedValue = 0.0;     // Wind speed
+float windspeedValue = 0.0;       // Wind speed
 
 // LEDs
 #include <FastLED.h>
@@ -60,6 +60,15 @@ HASensor sensorHumidity("Humidity");
 HASensor sensorUV("UV");
 HASensor sensorWindspeed("Wind_speed");
 HASensor sensorSignalstrength("Signal_strength");
+
+// Weather data API
+#include <ESP8266HTTPClient.h>
+// #include <ArduinoJson.h>
+#include <Arduino_JSON.h>
+
+const char* serverName = "http://api.weatherapi.com/v1/current.json?key=456a528ddbf846b5bcb124644211510&q=51.94362193018906,4.37045934809847";
+HTTPClient http;
+String sensorReadings;
 
 void setup() {
 
@@ -214,9 +223,9 @@ void loop() {
   if ( isnan(temperatureValue) ) {
     Serial.println("Failed to read temperature!");
   } else { 
-    Serial.print("Temperature: ");
-    Serial.print(temperatureValue);
-    Serial.println("°C");
+    // Serial.print("Temperature: ");
+    // Serial.print(temperatureValue);
+    // Serial.println("°C");
     sensorTemperature.setValue(temperatureValue);
   };
 
@@ -225,9 +234,9 @@ void loop() {
   if ( isnan(humidityValue) ) {
     Serial.println("Failed to read humidity!");
   } else {
-    Serial.print("Humidity: ");
-    Serial.print(humidityValue);
-    Serial.println("%");
+    // Serial.print("Humidity: ");
+    // Serial.print(humidityValue);
+    // Serial.println("%");
     sensorHumidity.setValue(humidityValue);
   };
 
@@ -236,8 +245,8 @@ void loop() {
   if ( isnan(uvIValue) ) {
     Serial.println("Failed to read UV Index!");
   } else { 
-    Serial.print("UV Index: ");
-    Serial.println(uvIValue);
+    // Serial.print("UV Index: ");
+    // Serial.println(uvIValue);
     sensorUV.setValue(uvIValue);
   };
 
@@ -246,23 +255,10 @@ void loop() {
   if ( isnan(hallValue) ) {
     Serial.println("Failed to read Hall sensor!");
   } else { 
-    Serial.print("Hall sensor data: ");
-    Serial.println(hallValue);
+    // Serial.print("Hall sensor data: ");
+    // Serial.println(hallValue);
     sensorWindspeed.setValue(hallValue); 
   }
-
-  // Loop LEDs
-  for (int i = 0; i < NUM_LEDS; i++) {
-  // Now turn the LED off, then pause
-    leds[i] = CRGB::Black;
-    FastLED.show();
-  }
-  delay(3000);
-  for (int i = 0; i < NUM_LEDS; i++) {
-    leds[i] = CRGB( 36, 229, 250);
-    FastLED.show();
-  }
-  delay(3000);
 
    // Clear LCD
   lcd.clear();
@@ -283,7 +279,30 @@ void loop() {
 
   // Signal strength check
   signalstrengthValue = WiFi.RSSI();
-  Serial.println(signalstrengthValue);
+  // Serial.println(signalstrengthValue);
   sensorSignalstrength.setValue(signalstrengthValue);
+
+  // Loop LEDs
+  for (int i = 0; i < NUM_LEDS; i++) {
+  // Now turn the LED off, then pause
+    leds[i] = CRGB::Black;
+    FastLED.show();
+  }
+  delay(3000);
+  for (int i = 0; i < NUM_LEDS; i++) {
+    leds[i] = CRGB( 36, 229, 250);
+    FastLED.show();
+  }
+  delay(3000);
+
+  http.begin(client, serverName);
+  int httpResponseCode = http.GET();
+
+  if (httpResponseCode == 200) {
+ 
+    String payload = http.getString();   // Get the request response payload
+    Serial.println(payload);
+
+  }
 
 }
