@@ -69,6 +69,7 @@ HASensor sensorSignalstrength("Signal_strength");
 const char* serverName = "http://api.weatherapi.com/v1/current.json?key=456a528ddbf846b5bcb124644211510&q=51.94362193018906,4.37045934809847";
 HTTPClient http;
 String sensorReadings;
+String payload;
 
 void setup() {
 
@@ -209,6 +210,28 @@ void setup() {
 
 }
 
+String httpGETRequest( const char* serverName) {
+
+  http.begin(client, serverName);
+  int httpResponseCode = http.GET();
+
+  if (httpResponseCode == 200) {
+ 
+    String payload = http.getString();   // Get the request response payload
+    Serial.println(payload);
+
+  } else {
+    
+    Serial.print("Error code: ");
+    Serial.println(httpResponseCode);
+  }
+
+  http.end();
+
+  return payload;
+
+}
+
 void loop() {
 
   delay(3000);
@@ -295,14 +318,6 @@ void loop() {
   }
   delay(3000);
 
-  http.begin(client, serverName);
-  int httpResponseCode = http.GET();
-
-  if (httpResponseCode == 200) {
- 
-    String payload = http.getString();   // Get the request response payload
-    Serial.println(payload);
-
-  }
+  sensorReadings = httpGETRequest(serverName);
 
 }
