@@ -90,11 +90,6 @@ void setup() {
   // LEDs
   FastLED.addLeds<LED_TYPE, DATA_PIN, COLOR_ORDER>(leds, NUM_LEDS);  // GRB ordering is typical
 
-  for (int i = 0; i < NUM_LEDS; i++) {
-    leds[i] = CRGB( 36, 229, 250);
-    FastLED.show();
-  }
-
   // LCD
   lcd.init();
   lcd.backlight();
@@ -289,19 +284,6 @@ void loop() {
   // Serial.println(signalstrengthValue);
   sensorSignalstrength.setValue(signalstrengthValue);
 
-  // Loop LEDs
-  for (int i = 0; i < NUM_LEDS; i++) {
-  // Now turn the LED off, then pause
-    leds[i] = CRGB::Black;
-    FastLED.show();
-  }
-  delay(3000);
-  for (int i = 0; i < NUM_LEDS; i++) {
-    leds[i] = CRGB( 36, 229, 250);
-    FastLED.show();
-  }
-  delay(3000);
-
   String sensorReadings = httpGETRequest(serverName);
   JSONVar myWeather = JSON.parse(sensorReadings);
 
@@ -311,6 +293,19 @@ void loop() {
   }
 
   JSONVar currentWeather = myWeather["current"]["condition"]["code"];
-  Serial.println(currentWeather);
+  // int weatherCondition = int(currentWeather);
+  int weatherCondition = 1087;
+
+  if ( weatherCondition == 1009) {
+    for (int i = 0; i < NUM_LEDS; i++) {
+      leds[i] = CRGB( 36, 229, 250);
+      FastLED.show();
+    }
+  } else if ( weatherCondition == 1087 ) {
+    for (int i = 0; i < NUM_LEDS; i++) {
+      leds[i] = CRGB( 255, 255, 15);
+      FastLED.show();
+    }
+  }
 
 }
