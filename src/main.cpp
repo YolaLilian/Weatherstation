@@ -90,6 +90,12 @@ void setup() {
   // LEDs
   FastLED.addLeds<LED_TYPE, DATA_PIN, COLOR_ORDER>(leds, NUM_LEDS);  // GRB ordering is typical
 
+  for (int i = 0; i < NUM_LEDS; i++) {
+  // Now turn the LED off, then pause
+    leds[i] = CRGB::Black;
+    FastLED.show();
+  }
+
   // LCD
   lcd.init();
   lcd.backlight();
@@ -221,9 +227,49 @@ String httpGETRequest(const char* serverName) {
 
 }
 
+void rain() {
+  leds[0] = CRGB( 36, 229, 250);
+  leds[5] = CRGB( 36, 229, 250);
+  FastLED.show();
+  delay(100);
+  leds[1] = CRGB( 36, 229, 250);
+  leds[4] = CRGB( 36, 229, 250);
+  FastLED.show();
+  delay(100);
+  leds[2] = CRGB( 36, 229, 250);
+  leds[3] = CRGB( 36, 229, 250);
+  FastLED.show();
+  delay(100);
+
+  leds[0] = CRGB::Black;
+  leds[5] = CRGB::Black;
+  FastLED.show();
+  delay(100);
+  leds[1] = CRGB::Black;
+  leds[4] = CRGB::Black;
+  FastLED.show();
+  delay(100);
+  leds[2] = CRGB::Black;
+  leds[3] = CRGB::Black;
+  FastLED.show();
+  delay(1000);
+
+}
+
+void thunder() {
+
+  for (int i = 0; i < NUM_LEDS; i++) {
+    leds[i] = CRGB( 255, 255, 15);
+    FastLED.show();
+    leds[i] = CRGB::Black;
+    FastLED.show();
+  }
+
+}
+
 void loop() {
 
-  delay(3000);
+  delay(5000);
 
   temperatureValue = dht.readTemperature();
   humidityValue = dht.readHumidity();
@@ -281,7 +327,6 @@ void loop() {
 
   // Signal strength check
   signalstrengthValue = WiFi.RSSI();
-  // Serial.println(signalstrengthValue);
   sensorSignalstrength.setValue(signalstrengthValue);
 
   String sensorReadings = httpGETRequest(serverName);
@@ -293,19 +338,27 @@ void loop() {
   }
 
   JSONVar currentWeather = myWeather["current"]["condition"]["code"];
-  // int weatherCondition = int(currentWeather);
-  int weatherCondition = 1087;
+  // int weatherCondition = int(currentWeather); // Real weather
+  int weatherCondition = 1192; // Simulate weatherconditions
 
-  if ( weatherCondition == 1009) {
-    for (int i = 0; i < NUM_LEDS; i++) {
-      leds[i] = CRGB( 36, 229, 250);
-      FastLED.show();
-    }
-  } else if ( weatherCondition == 1087 ) {
-    for (int i = 0; i < NUM_LEDS; i++) {
-      leds[i] = CRGB( 255, 255, 15);
-      FastLED.show();
-    }
+  // Thunder 
+  if ( weatherCondition == 1087 || weatherCondition == 1273 || weatherCondition == 1276 || weatherCondition == 1279 || weatherCondition == 1282 ) {
+    thunder();
+  } 
+  // Light rain
+  else if ( weatherCondition == 1180 || weatherCondition == 1183 ) {
+    rain();
+  }   
+  // Medium rain
+  else if ( weatherCondition == 1186 || weatherCondition == 1189 ) {
+    rain();
+    rain();   
+  } 
+  // Heavy rain
+  else if ( weatherCondition == 1192 || weatherCondition == 1195 ) {
+    rain();
+    rain();
+    rain();
   }
-
+    
 }
