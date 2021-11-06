@@ -1,3 +1,5 @@
+#include <Arduino.h>;
+
 // DHT
 #include <DHT.h>
 
@@ -20,8 +22,10 @@ Adafruit_VEML6075 uv = Adafruit_VEML6075();
 float uvIValue = 0.0;             // UV Index
 
 // Hall
-int hallPin = 12;
-bool hallValue = 0;               // Hall sensor true or false
+const int hallPin = 12;
+int hallValue = 0;                // Hall sensor true or false
+int rpm;                          // Rotations per minute
+const unsigned long sampleTime = 1000;
 
 float windspeedValue = 0.0;       // Wind speed
 
@@ -110,7 +114,7 @@ void setup() {
   lcd.print(uvIValue);
   lcd.setCursor(0,3);
   lcd.print("Wind speed: ");
-  lcd.print(hallValue); // Replace with wind speed variable!!!
+  lcd.print(windspeedValue); // Replace with wind speed variable!!!
 
   // MAC address
   byte mac[WL_MAC_ADDR_LENGTH];
@@ -267,6 +271,28 @@ void thunder() {
 
 }
 
+int getRPM() {
+  int count = 0;
+  boolean countFlag = LOW;
+  unsigned long currentTime = 0;
+  unsigned long startTime = millis();
+  while (currentTime <= sampleTime) {
+    // ESP.wdtFeed();
+    if (digitalRead(hallPin) == 1) {
+      countFlag = HIGH;
+    }
+    if (digitalRead(hallPin) == 0 && countFlag == HIGH) {
+      count++;
+      countFlag=LOW;
+      // Serial.print(count);
+    }
+    currentTime = millis() - startTime;
+  }
+  // Serial.println(count);
+  int countRpm = (60000/float(sampleTime))*count;
+  return countRpm;
+}
+
 void loop() {
 
   delay(5000);
@@ -274,39 +300,26 @@ void loop() {
   temperatureValue = dht.readTemperature();
   humidityValue = dht.readHumidity();
   uvIValue = uv.readUVI();
-  hallValue = digitalRead(hallPin);
+  hallValue = getRPM();
+  Serial.print("RPM = ");
+  Serial.println(hallValue);
 
-  // Check if empty or failed reading
-  // If not, print temperature
+  // Check if empty or failed readings
+  // If not, print value
   if ( isnan(temperatureValue) ) {
     Serial.println("Failed to read temperature!");
-  } else { 
-    sensorTemperature.setValue(temperatureValue);
-  };
-
-  // Check if empty or failed reading	
-  // If not, print humidity
-  if ( isnan(humidityValue) ) {
+  } else if ( isnan(humidityValue) ) {
     Serial.println("Failed to read humidity!");
-  } else {
-    sensorHumidity.setValue(humidityValue);
-  };
-
-  // Check if empty or failed reading
-  // If not, print UV Index
-  if ( isnan(uvIValue) ) {
-    Serial.println("Failed to read UV Index!");
-  } else { 
-    sensorUV.setValue(uvIValue);
-  };
-
-  // Check if empty or failed reading
-  // If not, print Hall data
-  if ( isnan(hallValue) ) {
+  } else if ( isnan(uvIValue) ) {
+   Serial.println("Failed to read UV Index!");
+  } else if ( isnan(hallValue) ) {
     Serial.println("Failed to read Hall sensor!");
   } else { 
-    sensorWindspeed.setValue(hallValue); 
-  }
+    // sensorTemperature.setValue(temperatureValue);
+    // sensorHumidity.setValue(humidityValue);
+    // sensorUV.setValue(uvIValue);
+    // sensorWindspeed.setValue(hallValue); 
+  };
 
    // Clear LCD
   lcd.clear();
@@ -323,22 +336,22 @@ void loop() {
   lcd.print(uvIValue);
   lcd.setCursor(0,3);
   lcd.print("Wind speed: ");
-  lcd.print(hallValue); // Replace with wind speed variable!!!
+  lcd.print(windspeedValue); // Replace with wind speed variable!!!
 
   // Signal strength check
-  signalstrengthValue = WiFi.RSSI();
-  sensorSignalstrength.setValue(signalstrengthValue);
+  // signalstrengthValue = WiFi.RSSI();
+  // sensorSignalstrength.setValue(signalstrengthValue);
 
-  String sensorReadings = httpGETRequest(serverName);
-  JSONVar myWeather = JSON.parse(sensorReadings);
+  // String sensorReadings = httpGETRequest(serverName);
+  // JSONVar myWeather = JSON.parse(sensorReadings);
 
-  if (JSON.typeof(myWeather) == "undefined") {
-    Serial.println("Parsing input failed!");
-    return;
-  }
+  // if (JSON.typeof(myWeather) == "undefined") {
+  //   Serial.println("Parsing input failed!");
+  //   return;
+  // }
 
-  JSONVar currentWeather = myWeather["current"]["condition"]["code"];
-  // int weatherCondition = int(currentWeather); // Real weather
+  // JSONVar currentWeather = myWeather["current"]["condition"]["code"];
+  // // int weatherCondition = int(currentWeather); // Real weather
   int weatherCondition = 1192; // Simulate weatherconditions
 
   // Thunder 
