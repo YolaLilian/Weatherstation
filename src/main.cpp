@@ -74,6 +74,13 @@ HTTPClient http;
 String payload;
 String sensorReadings;
 
+// HUE lights
+String hue_server_IP = HUE_SERVER_IP;
+String hue_user_ID = HUE_USER_ID;
+String hueServerNameGET = "http://" + hue_server_IP + "/api/" + hue_user_ID + "/groups/5";
+String hueServerNamePUT = "http://" + hue_server_IP + "/api/" + hue_user_ID + "/groups/5/action";
+String response;
+
 void setup() {
 
   Serial.begin(9600);
@@ -231,6 +238,54 @@ String httpGETRequest(const char* serverName) {
 
 }
 
+void httpPUTRequestRain(String hueServerNameGET, String hueServerNamePUT) {
+  http.begin (client, hueServerNameGET);
+  http.GET();
+  response = http.getString();
+  JSONVar lights = JSON.parse(response);
+  JSONVar currentLights = lights["action"]["on"];
+  http.end(); 
+  bool lightStatus = bool(currentLights);
+
+  http.begin(client, hueServerNamePUT);
+  http.addHeader("Content-Type", "text/plain");
+
+  if (lightStatus == false ) {
+    int httpResponseCode = http.PUT("{\"on\": true, \"hue\": 41202}");
+    Serial.println("Rain on!"); // Debugging purposes
+  } else if (lightStatus == true ) {
+    int httpResponseCode = http.PUT("{\"on\": false}");
+    Serial.println("Rain off!");
+  }
+  
+  http.end();
+
+}
+
+void httpPUTRequestThunder(String hueServerNameGET, String hueServerNamePUT) {
+  http.begin (client, hueServerNameGET);
+  http.GET();
+  response = http.getString();
+  JSONVar lights = JSON.parse(response);
+  JSONVar currentLights = lights["action"]["on"];
+  http.end(); 
+  bool lightStatus = bool(currentLights);
+
+  http.begin(client, hueServerNamePUT);
+  http.addHeader("Content-Type", "text/plain");
+
+  if (lightStatus == false ) {
+    int httpResponseCode = http.PUT("{\"on\": true, \"hue\": 9493, \"effect\": \"none\"}");
+    Serial.println("Thunder on!"); // Debugging purposes
+  } else if (lightStatus == true ) {
+    int httpResponseCode = http.PUT("{\"on\": false}");
+    Serial.println("Thunder off!");
+  }
+  
+  http.end();
+
+}
+
 void rain() {
   leds[0] = CRGB( 36, 229, 250);
   leds[5] = CRGB( 36, 229, 250);
@@ -339,39 +394,63 @@ void loop() {
   lcd.print(windspeedValue); // Replace with wind speed variable!!!
 
   // Signal strength check
-  // signalstrengthValue = WiFi.RSSI();
-  // sensorSignalstrength.setValue(signalstrengthValue);
+  signalstrengthValue = WiFi.RSSI();
+  sensorSignalstrength.setValue(signalstrengthValue);
 
-  // String sensorReadings = httpGETRequest(serverName);
-  // JSONVar myWeather = JSON.parse(sensorReadings);
+  String sensorReadings = httpGETRequest(serverName);
+  JSONVar myWeather = JSON.parse(sensorReadings);
 
-  // if (JSON.typeof(myWeather) == "undefined") {
-  //   Serial.println("Parsing input failed!");
-  //   return;
-  // }
+  if (JSON.typeof(myWeather) == "undefined") {
+    Serial.println("Parsing input failed!");
+    return;
+  }
 
   // JSONVar currentWeather = myWeather["current"]["condition"]["code"];
-  // // int weatherCondition = int(currentWeather); // Real weather
-  int weatherCondition = 1192; // Simulate weatherconditions
+  // int weatherCondition = int(currentWeather); // Real weather
+  int weatherCondition = 1100; // Simulate weatherconditions
 
   // Thunder 
   if ( weatherCondition == 1087 || weatherCondition == 1273 || weatherCondition == 1276 || weatherCondition == 1279 || weatherCondition == 1282 ) {
     thunder();
+    httpPUTRequestThunder(hueServerNameGET, hueServerNamePUT);
+    delay(100);
+    httpPUTRequestThunder(hueServerNameGET, hueServerNamePUT);
   } 
   // Light rain
   else if ( weatherCondition == 1180 || weatherCondition == 1183 ) {
     rain();
+    httpPUTRequestRain(hueServerNameGET, hueServerNamePUT);
+    delay(500);
+    httpPUTRequestRain(hueServerNameGET, hueServerNamePUT);
   }   
   // Medium rain
   else if ( weatherCondition == 1186 || weatherCondition == 1189 ) {
     rain();
-    rain();   
+    rain();
+    httpPUTRequestRain(hueServerNameGET, hueServerNamePUT);
+    delay(500);
+    httpPUTRequestRain(hueServerNameGET, hueServerNamePUT);
+    delay(500);
+    httpPUTRequestRain(hueServerNameGET, hueServerNamePUT);
+    delay(500);
+    httpPUTRequestRain(hueServerNameGET, hueServerNamePUT); 
   } 
   // Heavy rain
   else if ( weatherCondition == 1192 || weatherCondition == 1195 ) {
     rain();
     rain();
     rain();
+    httpPUTRequestRain(hueServerNameGET, hueServerNamePUT);
+    delay(500);
+    httpPUTRequestRain(hueServerNameGET, hueServerNamePUT);
+    delay(500);
+    httpPUTRequestRain(hueServerNameGET, hueServerNamePUT);
+    delay(500);
+    httpPUTRequestRain(hueServerNameGET, hueServerNamePUT);
+    delay(500);
+    httpPUTRequestRain(hueServerNameGET, hueServerNamePUT);
+    delay(500);
+    httpPUTRequestRain(hueServerNameGET, hueServerNamePUT);
   }
     
 }
