@@ -56,6 +56,9 @@ WiFiClient client;
 HADevice device;
 HAMqtt mqtt(client, device);
 
+String ssid = WIFI_SSID;
+String password = WIFI_PASSWORD;
+
 HASensor sensorOwner("Owner");
 HASensor sensorLong("Long");
 HASensor sensorLat("Lat");
@@ -129,13 +132,14 @@ void setup() {
   device.setUniqueId(mac, sizeof(mac));
 
   // Connect to WiFi
-  // WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
-  // while (WiFi.status() != WL_CONNECTED) {
-  //     Serial.print(".");
-  //     delay(500); // waiting for the connection
-  // }
-  // Serial.println();
-  // Serial.println("Connected to the network");
+  WiFi.mode(WIFI_STA);
+  WiFi.begin(ssid, password);
+  while (WiFi.status() != WL_CONNECTED) {
+      Serial.print(".");
+      delay(500); // waiting for the connection
+  }
+  Serial.println();
+  Serial.println("Connected to the network");
 
   // HA String conversion from Secret.h
   String student_id = STUDENT_ID;
@@ -204,15 +208,15 @@ void setup() {
   sensorSignalstrength.setUnitOfMeasurement("dBm");
 
   // Start MQTT
-  // mqtt.begin(BROKER_ADDR, BROKER_USERNAME, BROKER_PASSWORD);
+  mqtt.begin(BROKER_ADDR, BROKER_USERNAME, BROKER_PASSWORD);
 
-  // while (!mqtt.isConnected()) {
-  //     mqtt.loop();
-  //     Serial.print(".");
-  //     delay(500); // waiting for the connection
-  // }
+  while (!mqtt.isConnected()) {
+      mqtt.loop();
+      Serial.print(".");
+      delay(500); // waiting for the connection
+  }
   
-  // Serial.println("Connected to MQTT broker");
+  Serial.println("Connected to MQTT broker");
 
   // Set values
   sensorOwner.setValue(STUDENT_NAME);
@@ -359,15 +363,29 @@ void loop() {
 
   delay(5000);
 
+  Serial.printf("1st Connection status: %d\n", WiFi.status());
+  WiFi.mode(WIFI_OFF);
+  Serial.printf("2nd Connection status: %d\n", WiFi.status());
+
+
   temperatureValue = dht.readTemperature();
   humidityValue = dht.readHumidity();
   uvIValue = uv.readUVI();
   hallValue = getRPM();
-  // Serial.print("RPM = ");
   Serial.print(hallValue);
   Serial.println(" km/u");
 
-  // wifi.SetMode
+  WiFi.mode(WIFI_STA);
+  wifi_station_connect();
+  WiFi.begin(ssid, password);
+   while (WiFi.status() != WL_CONNECTED) {
+      Serial.print(".");
+      delay(500); // waiting for the connection
+  }
+  Serial.println();
+  Serial.println("Connected to the network");
+
+  Serial.printf("3rd Connection status: %d\n", WiFi.status());
 
   // Check if empty or failed readings
   // If not, print value
