@@ -50,14 +50,24 @@ float signalstrengthValue;        // Signal strength
 // MQTT Setup
 #include "Secret.h"
 #include <ESP8266WiFi.h>
+#include <ESP8266WiFiMulti.h>
 #include <ArduinoHA.h>
 
 WiFiClient client;
+ESP8266WiFiMulti wifiMulti;
 HADevice device;
 HAMqtt mqtt(client, device);
 
-String ssid = WIFI_SSID;
-String password = WIFI_PASSWORD;
+const uint32_t connectTimeoutMs = 5000;
+
+const char* ssid1 = WIFI_SSID_1;
+const char* password1 = WIFI_PASSWORD_1;
+const char* ssid2 = WIFI_SSID_2;
+const char* password2 = WIFI_PASSWORD_2;
+const char* ssid3 = WIFI_SSID_3;
+const char* password3 = WIFI_PASSWORD_3;
+const char* ssid4 = WIFI_SSID_4;
+const char* password4 = WIFI_PASSWORD_4;
 
 HASensor sensorOwner("Owner");
 HASensor sensorLong("Long");
@@ -133,7 +143,14 @@ void setup() {
 
   // Connect to WiFi
   WiFi.mode(WIFI_STA);
-  WiFi.begin(ssid, password);
+
+  wifiMulti.addAP(ssid1, password1);
+  wifiMulti.addAP(ssid2, password2);
+  wifiMulti.addAP(ssid3, password3);
+  wifiMulti.addAP(ssid4, password4);
+  wifiMulti.run(connectTimeoutMs);
+
+  // WiFi.begin(ssid, password);
   while (WiFi.status() != WL_CONNECTED) {
       Serial.print(".");
       delay(500); // waiting for the connection
@@ -361,9 +378,13 @@ int getRPM() {
 
 void loop() {
 
+  String currentSSID = WiFi.SSID();
+  Serial.println(currentSSID);
+
   delay(5000);
 
   Serial.printf("1st Connection status: %d\n", WiFi.status());
+  WiFi.disconnect();
   WiFi.mode(WIFI_OFF);
   Serial.printf("2nd Connection status: %d\n", WiFi.status());
 
@@ -377,8 +398,8 @@ void loop() {
 
   WiFi.mode(WIFI_STA);
   wifi_station_connect();
-  WiFi.begin(ssid, password);
-   while (WiFi.status() != WL_CONNECTED) {
+  wifiMulti.run(connectTimeoutMs);
+  while (WiFi.status() != WL_CONNECTED) {
       Serial.print(".");
       delay(500); // waiting for the connection
   }
@@ -422,7 +443,7 @@ void loop() {
   lcd.print(windspeedValue); // Replace with wind speed variable!!!
 
   // Signal strength check
-  // signalstrengthValue = WiFi.RSSI();
+  signalstrengthValue = WiFi.RSSI();
   // sensorSignalstrength.setValue(signalstrengthValue);
 
   // String sensorReadings = httpGETRequest(serverName);
