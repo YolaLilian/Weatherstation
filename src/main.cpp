@@ -1,4 +1,4 @@
-#include <Arduino.h>;
+#include <Arduino.h>
 
 // DHT
 #include <DHT.h>
@@ -25,7 +25,7 @@ float uvIValue = 0.0;             // UV Index
 const int hallPin = 12;
 int hallValue = 0;                // Hall sensor true or false
 int rpm;                          // Rotations per minute
-const unsigned long sampleTime = 1000;
+const unsigned long sampleTime = 10000;
 
 float windspeedValue = 0.0;       // Wind speed
 
@@ -129,13 +129,13 @@ void setup() {
   device.setUniqueId(mac, sizeof(mac));
 
   // Connect to WiFi
-  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
-  while (WiFi.status() != WL_CONNECTED) {
-      Serial.print(".");
-      delay(500); // waiting for the connection
-  }
-  Serial.println();
-  Serial.println("Connected to the network");
+  // WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+  // while (WiFi.status() != WL_CONNECTED) {
+  //     Serial.print(".");
+  //     delay(500); // waiting for the connection
+  // }
+  // Serial.println();
+  // Serial.println("Connected to the network");
 
   // HA String conversion from Secret.h
   String student_id = STUDENT_ID;
@@ -204,15 +204,15 @@ void setup() {
   sensorSignalstrength.setUnitOfMeasurement("dBm");
 
   // Start MQTT
-  mqtt.begin(BROKER_ADDR, BROKER_USERNAME, BROKER_PASSWORD);
+  // mqtt.begin(BROKER_ADDR, BROKER_USERNAME, BROKER_PASSWORD);
 
-  while (!mqtt.isConnected()) {
-      mqtt.loop();
-      Serial.print(".");
-      delay(500); // waiting for the connection
-  }
+  // while (!mqtt.isConnected()) {
+  //     mqtt.loop();
+  //     Serial.print(".");
+  //     delay(500); // waiting for the connection
+  // }
   
-  Serial.println("Connected to MQTT broker");
+  // Serial.println("Connected to MQTT broker");
 
   // Set values
   sensorOwner.setValue(STUDENT_NAME);
@@ -332,20 +332,27 @@ int getRPM() {
   unsigned long currentTime = 0;
   unsigned long startTime = millis();
   while (currentTime <= sampleTime) {
-    // ESP.wdtFeed();
+    ESP.wdtFeed();
     if (digitalRead(hallPin) == 1) {
       countFlag = HIGH;
     }
     if (digitalRead(hallPin) == 0 && countFlag == HIGH) {
       count++;
       countFlag=LOW;
-      // Serial.print(count);
+      // Serial.println(count);
     }
     currentTime = millis() - startTime;
   }
   // Serial.println(count);
-  int countRpm = (60000/float(sampleTime))*count;
-  return countRpm;
+  int countRpm = (60000/float(sampleTime)) * count;
+  
+  int countKmU = 0.06552601 * countRpm + 2.373284;
+
+  if (countRpm == 0) {
+    countKmU = 0;
+  }
+
+  return countKmU;
 }
 
 void loop() {
@@ -356,8 +363,11 @@ void loop() {
   humidityValue = dht.readHumidity();
   uvIValue = uv.readUVI();
   hallValue = getRPM();
-  Serial.print("RPM = ");
-  Serial.println(hallValue);
+  // Serial.print("RPM = ");
+  Serial.print(hallValue);
+  Serial.println(" km/u");
+
+  // wifi.SetMode
 
   // Check if empty or failed readings
   // If not, print value
@@ -394,16 +404,16 @@ void loop() {
   lcd.print(windspeedValue); // Replace with wind speed variable!!!
 
   // Signal strength check
-  signalstrengthValue = WiFi.RSSI();
-  sensorSignalstrength.setValue(signalstrengthValue);
+  // signalstrengthValue = WiFi.RSSI();
+  // sensorSignalstrength.setValue(signalstrengthValue);
 
-  String sensorReadings = httpGETRequest(serverName);
-  JSONVar myWeather = JSON.parse(sensorReadings);
+  // String sensorReadings = httpGETRequest(serverName);
+  // JSONVar myWeather = JSON.parse(sensorReadings);
 
-  if (JSON.typeof(myWeather) == "undefined") {
-    Serial.println("Parsing input failed!");
-    return;
-  }
+  // if (JSON.typeof(myWeather) == "undefined") {
+  //   Serial.println("Parsing input failed!");
+  //   return;
+  // }
 
   // JSONVar currentWeather = myWeather["current"]["condition"]["code"];
   // int weatherCondition = int(currentWeather); // Real weather
