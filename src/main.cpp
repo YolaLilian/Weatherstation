@@ -346,7 +346,7 @@ int getRPM() {
   // Serial.println(count);
   int countRpm = (60000/float(sampleTime)) * count;
   
-  int countKmU = 0.06552601 * countRpm + 2.373284;
+  int countKmU = 0.07515353 * countRpm + 0.03593882;
 
   if (countRpm == 0) {
     countKmU = 0;
