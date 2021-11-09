@@ -23,7 +23,6 @@ float uvIValue = 0.0;             // UV Index
 
 // Hall
 const int hallPin = 12;
-int hallValue = 0;                // Hall sensor true or false
 int rpm;                          // Rotations per minute
 const unsigned long sampleTime = 10000;
 
@@ -124,17 +123,13 @@ void setup() {
   lcd.init();
   lcd.backlight();
   lcd.setCursor(0,0);
-  lcd.print("Humidity: ");
-  lcd.print(humidityValue);
-  lcd.setCursor(0,1);
-  lcd.print("Temperature: ");
-  lcd.print(temperatureValue);
-  lcd.setCursor(0,2);
-  lcd.print("UV Index: "); 
-  lcd.print(uvIValue);
+  lcd.print("--------------------");
+  lcd.setCursor(5,1);
+  lcd.print("Setting up");
+  lcd.setCursor(3,2);
+  lcd.print("weatherstation");
   lcd.setCursor(0,3);
-  lcd.print("Wind speed: ");
-  lcd.print(windspeedValue); // Replace with wind speed variable!!!
+  lcd.print("--------------------");
 
   // MAC address
   byte mac[WL_MAC_ADDR_LENGTH];
@@ -392,8 +387,8 @@ void loop() {
   temperatureValue = dht.readTemperature();
   humidityValue = dht.readHumidity();
   uvIValue = uv.readUVI();
-  hallValue = getRPM();
-  Serial.print(hallValue);
+  windspeedValue = getRPM();
+  Serial.print(windspeedValue);
   Serial.println(" km/u");
 
   WiFi.mode(WIFI_STA);
@@ -416,13 +411,13 @@ void loop() {
     Serial.println("Failed to read humidity!");
   } else if ( isnan(uvIValue) ) {
    Serial.println("Failed to read UV Index!");
-  } else if ( isnan(hallValue) ) {
+  } else if ( isnan(windspeedValue) ) {
     Serial.println("Failed to read Hall sensor!");
   } else { 
-    // sensorTemperature.setValue(temperatureValue);
-    // sensorHumidity.setValue(humidityValue);
-    // sensorUV.setValue(uvIValue);
-    // sensorWindspeed.setValue(hallValue); 
+    sensorTemperature.setValue(temperatureValue);
+    sensorHumidity.setValue(humidityValue);
+    sensorUV.setValue(uvIValue);
+    sensorWindspeed.setValue(windspeedValue); 
   };
 
    // Clear LCD
@@ -430,37 +425,42 @@ void loop() {
 
   // Rewrite on LCD
   lcd.setCursor(0,0);
-  lcd.print("Humidity: ");
-  lcd.print(humidityValue);
-  lcd.setCursor(0,1);
   lcd.print("Temperature: ");
-  lcd.print(temperatureValue);
+  lcd.print(temperatureValue, 1);
+  lcd.print((char)223);
+  lcd.print("C");
+  lcd.setCursor(0,1); 
+  lcd.print("Humidity: ");
+  lcd.print(humidityValue, 1);
+  lcd.print("%");
   lcd.setCursor(0,2);
   lcd.print("UV Index: "); 
   lcd.print(uvIValue);
   lcd.setCursor(0,3);
   lcd.print("Wind speed: ");
-  lcd.print(windspeedValue); // Replace with wind speed variable!!!
+  lcd.print(windspeedValue, 1);
+  lcd.print("km/h");
 
   // Signal strength check
   signalstrengthValue = WiFi.RSSI();
-  // sensorSignalstrength.setValue(signalstrengthValue);
+  sensorSignalstrength.setValue(signalstrengthValue);
 
-  // String sensorReadings = httpGETRequest(serverName);
-  // JSONVar myWeather = JSON.parse(sensorReadings);
+  String sensorReadings = httpGETRequest(serverName);
+  JSONVar myWeather = JSON.parse(sensorReadings);
 
-  // if (JSON.typeof(myWeather) == "undefined") {
-  //   Serial.println("Parsing input failed!");
-  //   return;
-  // }
+  if (JSON.typeof(myWeather) == "undefined") {
+    Serial.println("Parsing input failed!");
+    return;
+  }
 
-  // JSONVar currentWeather = myWeather["current"]["condition"]["code"];
+  JSONVar currentWeather = myWeather["current"]["condition"]["code"];
   // int weatherCondition = int(currentWeather); // Real weather
-  int weatherCondition = 1100; // Simulate weatherconditions
+  int weatherCondition = 1192; // Simulate weatherconditions
 
   // Thunder 
   if ( weatherCondition == 1087 || weatherCondition == 1273 || weatherCondition == 1276 || weatherCondition == 1279 || weatherCondition == 1282 ) {
     thunder();
+    FastLED.clear();
     httpPUTRequestThunder(hueServerNameGET, hueServerNamePUT);
     delay(100);
     httpPUTRequestThunder(hueServerNameGET, hueServerNamePUT);
@@ -468,6 +468,8 @@ void loop() {
   // Light rain
   else if ( weatherCondition == 1180 || weatherCondition == 1183 ) {
     rain();
+    FastLED.clear();
+    // FastLED.setMaxPowerInVoltsAndMilliamps(3,);
     httpPUTRequestRain(hueServerNameGET, hueServerNamePUT);
     delay(500);
     httpPUTRequestRain(hueServerNameGET, hueServerNamePUT);
@@ -476,6 +478,7 @@ void loop() {
   else if ( weatherCondition == 1186 || weatherCondition == 1189 ) {
     rain();
     rain();
+    FastLED.clear();
     httpPUTRequestRain(hueServerNameGET, hueServerNamePUT);
     delay(500);
     httpPUTRequestRain(hueServerNameGET, hueServerNamePUT);
@@ -489,6 +492,7 @@ void loop() {
     rain();
     rain();
     rain();
+    FastLED.clear();
     httpPUTRequestRain(hueServerNameGET, hueServerNamePUT);
     delay(500);
     httpPUTRequestRain(hueServerNameGET, hueServerNamePUT);
