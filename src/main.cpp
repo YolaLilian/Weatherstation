@@ -85,6 +85,7 @@ const char* serverName = "http://api.weatherapi.com/v1/current.json?key=456a528d
 HTTPClient http;
 String payload;
 String sensorReadings;
+int weatherCondition = 0;
 
 // HUE lights
 String hue_server_IP = HUE_SERVER_IP;
@@ -150,7 +151,6 @@ void setup() {
       Serial.print(".");
       delay(500); // waiting for the connection
   }
-  Serial.println();
   Serial.println("Connected to the network");
 
   // HA String conversion from Secret.h
@@ -254,54 +254,22 @@ String httpGETRequest(const char* serverName) {
 
 }
 
-void httpPUTRequestRain(String hueServerNameGET, String hueServerNamePUT) {
-  http.begin (client, hueServerNameGET);
-  http.GET();
-  response = http.getString();
-  JSONVar lights = JSON.parse(response);
-  JSONVar currentLights = lights["action"]["on"];
-  http.end(); 
-  bool lightStatus = bool(currentLights);
-
+void httpPUTRequest(String hueServerNamePUT, int weatherCondition) {
   http.begin(client, hueServerNamePUT);
   http.addHeader("Content-Type", "text/plain");
+  Serial.println(weatherCondition);
 
-  if (lightStatus == false ) {
-    int httpResponseCode = http.PUT("{\"on\": true, \"hue\": 41202}");
-    Serial.println("Rain on!"); // Debugging purposes
-  } else if (lightStatus == true ) {
+  if (weatherCondition == 1003 || weatherCondition == 1006 || weatherCondition == 1009 || weatherCondition == 1087 || weatherCondition == 1180 || weatherCondition == 1183 || weatherCondition == 1186 || weatherCondition == 1189 || weatherCondition == 1192 || weatherCondition == 1195 || weatherCondition == 1273 || weatherCondition == 1276|| weatherCondition == 1279 || weatherCondition == 1282) {
+    int httpResponseCode = http.PUT("{\"on\": true}");
+    Serial.println("Hue on!"); // Debugging purposes
+  } else if ( weatherCondition == 1000) {
     int httpResponseCode = http.PUT("{\"on\": false}");
-    Serial.println("Rain off!");
+    Serial.println("Hue off!");
   }
   
   http.end();
 
 }
-
-void httpPUTRequestThunder(String hueServerNameGET, String hueServerNamePUT) {
-  http.begin (client, hueServerNameGET);
-  http.GET();
-  response = http.getString();
-  JSONVar lights = JSON.parse(response);
-  JSONVar currentLights = lights["action"]["on"];
-  http.end(); 
-  bool lightStatus = bool(currentLights);
-
-  http.begin(client, hueServerNamePUT);
-  http.addHeader("Content-Type", "text/plain");
-
-  if (lightStatus == false ) {
-    int httpResponseCode = http.PUT("{\"on\": true, \"hue\": 9493, \"effect\": \"none\"}");
-    Serial.println("Thunder on!"); // Debugging purposes
-  } else if (lightStatus == true ) {
-    int httpResponseCode = http.PUT("{\"on\": false}");
-    Serial.println("Thunder off!");
-  }
-  
-  http.end();
-
-}
-
 void rain() {
   leds[0] = CRGB( 36, 229, 250);
   leds[5] = CRGB( 36, 229, 250);
@@ -444,6 +412,8 @@ void loop() {
   // Signal strength check
   signalstrengthValue = WiFi.RSSI();
   sensorSignalstrength.setValue(signalstrengthValue);
+  
+  httpPUTRequest( hueServerNamePUT, weatherCondition);
 
   String sensorReadings = httpGETRequest(serverName);
   JSONVar myWeather = JSON.parse(sensorReadings);
@@ -455,37 +425,23 @@ void loop() {
 
   JSONVar currentWeather = myWeather["current"]["condition"]["code"];
   // int weatherCondition = int(currentWeather); // Real weather
-  int weatherCondition = 1192; // Simulate weatherconditions
+  weatherCondition = 1000; // Simulate weatherconditions
 
   // Thunder 
   if ( weatherCondition == 1087 || weatherCondition == 1273 || weatherCondition == 1276 || weatherCondition == 1279 || weatherCondition == 1282 ) {
     thunder();
     FastLED.clear();
-    httpPUTRequestThunder(hueServerNameGET, hueServerNamePUT);
-    delay(100);
-    httpPUTRequestThunder(hueServerNameGET, hueServerNamePUT);
-  } 
+  }
   // Light rain
   else if ( weatherCondition == 1180 || weatherCondition == 1183 ) {
     rain();
     FastLED.clear();
-    // FastLED.setMaxPowerInVoltsAndMilliamps(3,);
-    httpPUTRequestRain(hueServerNameGET, hueServerNamePUT);
-    delay(500);
-    httpPUTRequestRain(hueServerNameGET, hueServerNamePUT);
   }   
   // Medium rain
   else if ( weatherCondition == 1186 || weatherCondition == 1189 ) {
     rain();
     rain();
     FastLED.clear();
-    httpPUTRequestRain(hueServerNameGET, hueServerNamePUT);
-    delay(500);
-    httpPUTRequestRain(hueServerNameGET, hueServerNamePUT);
-    delay(500);
-    httpPUTRequestRain(hueServerNameGET, hueServerNamePUT);
-    delay(500);
-    httpPUTRequestRain(hueServerNameGET, hueServerNamePUT); 
   } 
   // Heavy rain
   else if ( weatherCondition == 1192 || weatherCondition == 1195 ) {
@@ -493,17 +449,6 @@ void loop() {
     rain();
     rain();
     FastLED.clear();
-    httpPUTRequestRain(hueServerNameGET, hueServerNamePUT);
-    delay(500);
-    httpPUTRequestRain(hueServerNameGET, hueServerNamePUT);
-    delay(500);
-    httpPUTRequestRain(hueServerNameGET, hueServerNamePUT);
-    delay(500);
-    httpPUTRequestRain(hueServerNameGET, hueServerNamePUT);
-    delay(500);
-    httpPUTRequestRain(hueServerNameGET, hueServerNamePUT);
-    delay(500);
-    httpPUTRequestRain(hueServerNameGET, hueServerNamePUT);
   }
     
 }
