@@ -23,7 +23,7 @@ float uvIValue = 0.0;             // UV Index
 
 // Hall
 const int hallPin = 12;
-int rpm;
+int rpm;                          // Rotations per minute
 const unsigned long sampleTime = 10000;
 
 float windspeedValue = 0.0;       // Wind speed
@@ -59,14 +59,14 @@ HAMqtt mqtt(client, device);
 
 const uint32_t connectTimeoutMs = 5000;
 
-const char* ssid1 = WIFI_SSID_1;
-const char* password1 = WIFI_PASSWORD_1;
-const char* ssid2 = WIFI_SSID_2;
-const char* password2 = WIFI_PASSWORD_2;
-const char* ssid3 = WIFI_SSID_3;
-const char* password3 = WIFI_PASSWORD_3;
-const char* ssid4 = WIFI_SSID_4;
-const char* password4 = WIFI_PASSWORD_4;
+const char* ssid = WIFI_SSID_3;
+const char* password = WIFI_PASSWORD_3;
+// const char* ssid2 = WIFI_SSID_2;
+// const char* password2 = WIFI_PASSWORD_2;
+// const char* ssid3 = WIFI_SSID_3;
+// const char* password3 = WIFI_PASSWORD_3;
+// const char* ssid4 = WIFI_SSID_4;
+// const char* password4 = WIFI_PASSWORD_4;
 
 HASensor sensorOwner("Owner");
 HASensor sensorLong("Long");
@@ -114,6 +114,8 @@ void setup() {
   // LEDs
   FastLED.addLeds<LED_TYPE, DATA_PIN, COLOR_ORDER>(leds, NUM_LEDS);  // GRB ordering is typical
 
+  // FastLED.setBrightness(5);
+
   for (int i = 0; i < NUM_LEDS; i++) {
   // Now turn the LED off, then pause
     leds[i] = CRGB::Black;
@@ -138,14 +140,7 @@ void setup() {
   device.setUniqueId(mac, sizeof(mac));
 
   // Connect to WiFi
-  WiFi.mode(WIFI_STA);
-
-  wifiMulti.addAP(ssid1, password1);
-  wifiMulti.addAP(ssid2, password2);
-  wifiMulti.addAP(ssid3, password3);
-  wifiMulti.addAP(ssid4, password4);
-  wifiMulti.run(connectTimeoutMs);
-
+  WiFi.begin(ssid, password);
   while (WiFi.status() != WL_CONNECTED) {
       Serial.print(".");
       delay(500); // waiting for the connection
@@ -154,8 +149,8 @@ void setup() {
 
 }
 
-void mqtt_start() {
-
+void mqtt_start () {
+    
   // HA String conversion from Secret.h
   String student_id = STUDENT_ID;
   String student_name = STUDENT_NAME;
@@ -258,17 +253,14 @@ String httpGETRequest(const char* serverName) {
 }
 
 void httpPUTRequest(String hueServerNamePUT, int weatherCondition) {
-  
   http.begin(client, hueServerNamePUT);
   http.addHeader("Content-Type", "text/plain");
   Serial.println(weatherCondition);
 
   if (weatherCondition == 1003 || weatherCondition == 1006 || weatherCondition == 1009 || weatherCondition == 1087 || weatherCondition == 1180 || weatherCondition == 1183 || weatherCondition == 1186 || weatherCondition == 1189 || weatherCondition == 1192 || weatherCondition == 1195 || weatherCondition == 1273 || weatherCondition == 1276|| weatherCondition == 1279 || weatherCondition == 1282) {
     int httpResponseCode = http.PUT("{\"on\": true}");
-    Serial.println("Hue on!"); // Debugging purposes
   } else if ( weatherCondition == 1000) {
     int httpResponseCode = http.PUT("{\"on\": false}");
-    Serial.println("Hue off!");
   }
   
   http.end();
@@ -329,13 +321,11 @@ int getRPM() {
     if (digitalRead(hallPin) == 0 && countFlag == HIGH) {
       count++;
       countFlag=LOW;
-      // Serial.println(count);
     }
     currentTime = millis() - startTime;
   }
-  // Serial.println(count);
+
   int countRpm = (60000/float(sampleTime)) * count;
-  
   int countKmU = 0.07515353 * countRpm + 0.03593882;
 
   if (countRpm == 0) {
@@ -347,9 +337,16 @@ int getRPM() {
 }
 
 void loop() {
-  
+
+  String currentSSID = WiFi.SSID();
+  Serial.println(currentSSID);
+
+  delay(5000);
+
+  Serial.printf("1st Connection status: %d\n", WiFi.status());
   WiFi.disconnect();
   WiFi.mode(WIFI_OFF);
+  Serial.printf("2nd Connection status: %d\n", WiFi.status());
 
   temperatureValue = dht.readTemperature();
   humidityValue = dht.readHumidity();
@@ -357,38 +354,6 @@ void loop() {
   windspeedValue = getRPM();
   Serial.print(windspeedValue);
   Serial.println(" km/u");
-
-  WiFi.mode(WIFI_STA);
-  wifi_station_connect();
-  wifiMulti.run(connectTimeoutMs);
-  while (WiFi.status() != WL_CONNECTED) {
-      Serial.print(".");
-      delay(500); // waiting for the connection
-  }
-  Serial.println("Connected to the network");
-
-  mqtt_start();
-
-  // Signal strength check
-  signalstrengthValue = WiFi.RSSI();
-  sensorSignalstrength.setValue(signalstrengthValue);
-
-  // Check if empty or failed readings
-  // If not, print value
-  if ( isnan(temperatureValue) ) {
-    Serial.println("Failed to read temperature!");
-  } else if ( isnan(humidityValue) ) {
-    Serial.println("Failed to read humidity!");
-  } else if ( isnan(uvIValue) ) {
-   Serial.println("Failed to read UV Index!");
-  } else if ( isnan(windspeedValue) ) {
-    Serial.println("Failed to read Hall sensor!");
-  } else { 
-    sensorTemperature.setValue(temperatureValue);
-    sensorHumidity.setValue(humidityValue);
-    sensorUV.setValue(uvIValue);
-    sensorWindspeed.setValue(windspeedValue); 
-  };
 
   // Clear LCD
   lcd.clear();
@@ -411,6 +376,42 @@ void loop() {
   lcd.print(windspeedValue, 1);
   lcd.print("km/h");
 
+  WiFi.mode(WIFI_STA);
+  WiFi.begin(ssid, password);
+  while (WiFi.status() != WL_CONNECTED) {
+      Serial.print(".");
+      delay(500); // waiting for the connection
+  }
+  Serial.println();
+  Serial.println("Connected to the network");
+
+  mqtt_start();
+
+  Serial.printf("3rd Connection status: %d\n", WiFi.status());
+
+  // Check if empty or failed readings
+  // If not, print value
+  if ( isnan(temperatureValue) ) {
+    Serial.println("Failed to read temperature!");
+  } else if ( isnan(humidityValue) ) {
+    Serial.println("Failed to read humidity!");
+  } else if ( isnan(uvIValue) ) {
+   Serial.println("Failed to read UV Index!");
+  } else if ( isnan(windspeedValue) ) {
+    Serial.println("Failed to read Hall sensor!");
+  } else { 
+    sensorTemperature.setValue(temperatureValue);
+    sensorHumidity.setValue(humidityValue);
+    sensorUV.setValue(uvIValue);
+    sensorWindspeed.setValue(windspeedValue); 
+  };
+
+  // Signal strength check
+  signalstrengthValue = WiFi.RSSI();
+  sensorSignalstrength.setValue(signalstrengthValue);
+  
+  httpPUTRequest( hueServerNamePUT, weatherCondition);
+
   String sensorReadings = httpGETRequest(serverName);
   JSONVar myWeather = JSON.parse(sensorReadings);
 
@@ -421,13 +422,13 @@ void loop() {
 
   JSONVar currentWeather = myWeather["current"]["condition"]["code"];
   // int weatherCondition = int(currentWeather); // Real weather
-  int weatherCondition = 1192; // Simulate weatherconditions
+  weatherCondition = 1192; // Simulate weatherconditions
 
   // Thunder 
   if ( weatherCondition == 1087 || weatherCondition == 1273 || weatherCondition == 1276 || weatherCondition == 1279 || weatherCondition == 1282 ) {
     thunder();
     FastLED.clear();
-  } 
+  }
   // Light rain
   else if ( weatherCondition == 1180 || weatherCondition == 1183 ) {
     rain();
@@ -436,21 +437,15 @@ void loop() {
   // Medium rain
   else if ( weatherCondition == 1186 || weatherCondition == 1189 ) {
     rain();
-    FastLED.clear();   
     rain();
-    FastLED.clear();   
+    FastLED.clear();
   } 
   // Heavy rain
   else if ( weatherCondition == 1192 || weatherCondition == 1195 ) {
     rain();
-    FastLED.clear();   
     rain();
-    FastLED.clear();   
     rain();
     FastLED.clear();
   }
     
-  // Change HUE Lights
-  httpPUTRequest( hueServerNamePUT, weatherCondition);  
-
 }
