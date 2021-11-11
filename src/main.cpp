@@ -59,8 +59,8 @@ HAMqtt mqtt(client, device);
 
 const uint32_t connectTimeoutMs = 5000;
 
-const char* ssid = WIFI_SSID_3;
-const char* password = WIFI_PASSWORD_3;
+const char* ssid = WIFI_SSID_4;
+const char* password = WIFI_PASSWORD_4;
 // const char* ssid2 = WIFI_SSID_2;
 // const char* password2 = WIFI_PASSWORD_2;
 // const char* ssid3 = WIFI_SSID_3;
@@ -242,28 +242,10 @@ String httpGETRequest(const char* serverName) {
 
   if (httpResponseCode == 200) {
     payload = http.getString();   // Get the request response payload
-  } else {
-    Serial.print("Error code: ");
-    Serial.println(httpResponseCode);
   }
 
   http.end();
   return payload;
-
-}
-
-void httpPUTRequest(String hueServerNamePUT, int weatherCondition) {
-  http.begin(client, hueServerNamePUT);
-  http.addHeader("Content-Type", "text/plain");
-  Serial.println(weatherCondition);
-
-  if (weatherCondition == 1003 || weatherCondition == 1006 || weatherCondition == 1009 || weatherCondition == 1087 || weatherCondition == 1180 || weatherCondition == 1183 || weatherCondition == 1186 || weatherCondition == 1189 || weatherCondition == 1192 || weatherCondition == 1195 || weatherCondition == 1273 || weatherCondition == 1276|| weatherCondition == 1279 || weatherCondition == 1282) {
-    int httpResponseCode = http.PUT("{\"on\": true}");
-  } else if ( weatherCondition == 1000) {
-    int httpResponseCode = http.PUT("{\"on\": false}");
-  }
-  
-  http.end();
 
 }
 
@@ -338,22 +320,15 @@ int getRPM() {
 
 void loop() {
 
-  String currentSSID = WiFi.SSID();
-  Serial.println(currentSSID);
-
   delay(5000);
 
-  Serial.printf("1st Connection status: %d\n", WiFi.status());
   WiFi.disconnect();
   WiFi.mode(WIFI_OFF);
-  Serial.printf("2nd Connection status: %d\n", WiFi.status());
 
   temperatureValue = dht.readTemperature();
   humidityValue = dht.readHumidity();
   uvIValue = uv.readUVI();
   windspeedValue = getRPM();
-  Serial.print(windspeedValue);
-  Serial.println(" km/u");
 
   // Clear LCD
   lcd.clear();
@@ -387,8 +362,6 @@ void loop() {
 
   mqtt_start();
 
-  Serial.printf("3rd Connection status: %d\n", WiFi.status());
-
   // Check if empty or failed readings
   // If not, print value
   if ( isnan(temperatureValue) ) {
@@ -409,8 +382,6 @@ void loop() {
   // Signal strength check
   signalstrengthValue = WiFi.RSSI();
   sensorSignalstrength.setValue(signalstrengthValue);
-  
-  httpPUTRequest( hueServerNamePUT, weatherCondition);
 
   String sensorReadings = httpGETRequest(serverName);
   JSONVar myWeather = JSON.parse(sensorReadings);
@@ -422,7 +393,7 @@ void loop() {
 
   JSONVar currentWeather = myWeather["current"]["condition"]["code"];
   // int weatherCondition = int(currentWeather); // Real weather
-  weatherCondition = 1192; // Simulate weatherconditions
+  weatherCondition = 1180; // Simulate weatherconditions
 
   // Thunder 
   if ( weatherCondition == 1087 || weatherCondition == 1273 || weatherCondition == 1276 || weatherCondition == 1279 || weatherCondition == 1282 ) {
